@@ -1,4 +1,6 @@
-from app import db, Artist, Show, Genre, Venue
+from app import db, Artist, Show, Genre, Venue, VenueGenre
+from sqlalchemy import func
+from datetime import datetime
 
 artist0 = Artist()
 artist0.name="Guns N Petals"
@@ -51,78 +53,60 @@ db.session.add(artist2)
 db.session.add(artist3)
 db.session.commit()
 
-#GenerateDBData()
-#@    "id": 4,
-#@    "name": "Guns N Petals",
-#@    "genres": ["Rock n Roll"],
-#@    "city": "San Francisco",
-#@    "state": "CA",
-#@    "phone": "326-123-5000",
-#@    "website": "https://www.gunsnpetalsband.com",
-#@    "facebook_link": "https://www.facebook.com/GunsNPetals",
-#@    "seeking_venue": True,
-#@    "seeking_description": "Looking for shows to perform at in the San Francisco Bay Area!",
-#@    "image_link": "https://images.unsplash.com/photo-1549213783-8284d0336c4f?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=300&q=80",
-#@    "past_shows": [{
-#@      "venue_id": 1,
-#@      "venue_name": "The Musical Hop",
-#@      "venue_image_link": "https://images.unsplash.com/photo-1543900694-133f37abaaa5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=400&q=60",
-#@      "start_time": "2019-05-21T21:30:00.000Z"
-#@    }],
-#@    "upcoming_shows": [],
-#@    "past_shows_count": 1,
-#@    "upcoming_shows_count": 0,
-#@)
-#@  # shows the venue page with the given venue_id
-#@  # TODO: replace with real venue data from the venues table, using venue_id
-#@  data1={
-#@  }
-#@  data2={
-#@    "id": 5,
-#@    "name": "Matt Quevedo",
-#@    "genres": ["Jazz"],
-#@    "city": "New York",
-#@    "state": "NY",
-#@    "phone": "300-400-5000",
-#@    "facebook_link": "https://www.facebook.com/mattquevedo923251523",
-#@    "seeking_venue": False,
-#@    "image_link": "https://images.unsplash.com/photo-1495223153807-b916f75de8c5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=334&q=80",
-#@    "past_shows": [{
-#@      "venue_id": 3,
-#@      "venue_name": "Park Square Live Music & Coffee",
-#@      "venue_image_link": "https://images.unsplash.com/photo-1485686531765-ba63b07845a7?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=747&q=80",
-#@      "start_time": "2019-06-15T23:00:00.000Z"
-#@    }],
-#@    "upcoming_shows": [],
-#@    "past_shows_count": 1,
-#@    "upcoming_shows_count": 0,
-#@  }
-#@  data3={
-#@    "id": 6,
-#@    "name": "The Wild Sax Band",
-#@    "genres": ["Jazz", "Classical"],
-#@    "city": "San Francisco",
-#@    "state": "CA",
-#@    "phone": "432-325-5432",
-#@    "seeking_venue": False,
-#@    "image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
-#@    "past_shows": [],
-#@    "upcoming_shows": [{
-#@      "venue_id": 3,
-#@      "venue_name": "Park Square Live Music & Coffee",
-#@      "venue_image_link": "https://images.unsplash.com/photo-1485686531765-ba63b07845a7?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=747&q=80",
-#@      "start_time": "2035-04-01T20:00:00.000Z"
-#@    }, {
-#@      "venue_id": 3,
-#@      "venue_name": "Park Square Live Music & Coffee",
-#@      "venue_image_link": "https://images.unsplash.com/photo-1485686531765-ba63b07845a7?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=747&q=80",
-#@      "start_time": "2035-04-08T20:00:00.000Z"
-#@    }, {
-#@      "venue_id": 3,
-#@      "venue_name": "Park Square Live Music & Coffee",
-#@      "venue_image_link": "https://images.unsplash.com/photo-1485686531765-ba63b07845a7?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=747&q=80",
-#@      "start_time": "2035-04-15T20:00:00.000Z"
-#@    }],
-#@    "past_shows_count": 0,
-#@    "upcoming_shows_count": 3,
-#@  }
+
+venue0 = Venue()
+venue0.city = "San Francisco"
+venue0.state = "CA"
+venue0.phone = "123-123-1234"
+venue0.name = "The Musical Hop"
+venue0.genre.append(VenueGenre("Rock N Roll"))
+venue0.genre.append(VenueGenre("Jazz"))
+venue0.genre.append(VenueGenre("Classical"))
+venue0.address = "1015 Folsom Street"
+venue0.seeking_talent = True
+venue0.seeking_talent_desc = "We don't need talent, we need legends"
+
+venue1 = Venue()
+venue1.city = "San Francisco"
+venue1.state = "CA"
+venue1.phone = "415-000-1234"
+venue1.name = "Park Square Live Music & Coffee",
+venue1.genre.append(VenueGenre(name="Rap"))
+venue1.genre.append(VenueGenre(name="Rock N Roll"))
+venue1.genre.append(VenueGenre(name="Punk"))
+venue1.address = "34 Whiskey Moore Ave"
+venue1.seeking_talent = False
+
+venue2 = Venue()
+venue2.city = "New York"
+venue2.state = "NY"
+venue2.phone = "914-003-1132"
+venue2.name = "The Dueling Pianos Bar"
+venue2.genre.append(VenueGenre(name="Soul"))
+venue2.address = "335 Delancey Street"
+venue2.seeking_talent = True
+venue2.seeking_talent_desc = "Yo we need some talent in this hizouse"
+
+venue3 = Venue()
+venue3.city = "Oakland"
+venue3.state = "CA"
+venue3.phone = "415-555-5555"
+venue3.name = "Oakland Convention Center",
+venue3.genre.append(VenueGenre(name="Alternative"))
+venue3.address = "6824 Main St"
+venue3.seeking_talent = False
+
+db.session.add(venue0)
+db.session.add(venue1)
+db.session.add(venue2)
+db.session.add(venue3)
+db.session.commit()
+
+
+show0 = Show()
+show0.artist_id = Artist.query.first().id
+show0.venue_id = Venue.query.first().id
+show0.start_time = datetime.fromisoformat('2020-04-05T21:30:00.000')
+
+db.session.add(show0)
+db.session.commit()

@@ -7,6 +7,9 @@
 			{{ venue.name }}
 		</h1>
 		<p class="subtitle">
+			<a href="/venues/{{ venue.id }}/edit" class="btn btn-no-background btn-no-padding">
+				<i class="fas fa-edit"></i>
+			</a>
 			ID: {{ venue.id }}
 		</p>
 		<div class="genres">
@@ -76,4 +79,5 @@
 </section>
 
 {% endblock %}
+
 

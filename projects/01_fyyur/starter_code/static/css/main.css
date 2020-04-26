@@ -87,6 +87,15 @@ p.lead {
     color: #444;
 }
 
+.btn-no-background {
+  border: none;
+  background-color: transparent;
+}
+
+.btn-no-padding {
+  padding: 0px;
+}
+
 #content h3 {
   margin-top: 15px;
   margin-bottom: 15px;

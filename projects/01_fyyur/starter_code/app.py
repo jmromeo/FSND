@@ -21,10 +21,7 @@ import sys
 app = Flask(__name__)
 moment = Moment(app)
 app.config.from_object('config')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# TODO: connect to a local postgresql database
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres://jmromeo@localhost:5432/fyurr'
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
@@ -43,7 +40,6 @@ class VenueGenre(db.Model):
     def __repr__(self):
       return f'<Genre id={self.id}, name={self.name}, venue={self.venue_id}>'
 
-#come back and add zip code so its easier to search for venues in the same city
 class Venue(db.Model):
     __tablename__ = 'Venue'
 
@@ -60,6 +56,7 @@ class Venue(db.Model):
     seeking_talent = db.Column(db.Boolean, nullable = False)
     seeking_talent_desc = db.Column(db.String, nullable = True)
     show = db.relationship('Show', backref='venue', lazy='dynamic', cascade="all, delete-orphan")
+    listed_time = db.Column(db.DateTime, nullable=False)
 
     def __repr__(self):
       return f'<Venue id={self.id}, name={self.name}>'
@@ -86,8 +83,8 @@ class Venue(db.Model):
 
       return shows
 
-class Genre(db.Model):
-    __tablename__ = 'Genre'
+class ArtistGenre(db.Model):
+    __tablename__ = 'ArtistGenre'
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
@@ -104,13 +101,14 @@ class Artist(db.Model):
     city = db.Column(db.String(120))
     state = db.Column(db.String(120))
     phone = db.Column(db.String(120))
-    genre = db.relationship('Genre', backref='artist', cascade="all, delete-orphan")
+    genre = db.relationship('ArtistGenre', backref='artist', cascade="all, delete-orphan")
     website_link = db.Column(db.String(120))
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
     seeking_venue = db.Column(db.Boolean, nullable=False)
     seeking_description = db.Column(db.String, nullable=True) # only necessary if seeking venue is false
-    show = db.relationship('Show', backref='artist', lazy='dynamic')
+    show = db.relationship('Show', backref='artist', lazy='dynamic', cascade="all, delete-orphan")
+    listed_time = db.Column(db.DateTime, nullable=False)
 
     def __repr__(self):
         return f'<Artist id={self.id}, name={self.name}>'
@@ -146,7 +144,15 @@ app.jinja_env.filters['datetime'] = format_datetime
 
 @app.route('/')
 def index():
-  return render_template('pages/home.html')
+  recently_listed_artists = Artist.query.order_by(Artist.listed_time.desc()).limit(10).all()
+  recently_listed_venues = Venue.query.order_by(Venue.listed_time.desc()).limit(10).all()
+
+  data = {
+    "artists": recently_listed_artists,
+    "venues": recently_listed_venues
+  }
+
+  return render_template('pages/home.html', data=data)
 
 
 #  Venues
@@ -156,7 +162,7 @@ def index():
 def venues():
   data = []
   previousVenue = Venue()
-  venues = Venue.query.order_by(Venue.state, Venue.city).all()
+  venues = Venue.query.order_by(Venue.state, Venue.city, Venue.name).all()
 
   for venue in venues:
     if previousVenue.city != venue.city or previousVenue.state != venue.state:
@@ -181,7 +187,7 @@ def search_venues():
   search_term = request.form.get('search_term', '')
   search_query = Venue.query.filter(Venue.name.ilike(f'%{search_term}%'))
 
-  venues = search_query.all()
+  venues = search_query.order_by(Venue.name).all()
   venue_count = search_query.count()
 
   data = []
@@ -264,6 +270,7 @@ def create_venue_submission():
   newVenue.address = request.form['address']
   newVenue.phone = request.form['phone']
   newVenue.seeking_talent = False
+  newVenue.listed_time = datetime.utcnow()
   genres = request.form.getlist('genres')
   for genre in genres:
     newVenue.genre.append(VenueGenre(name=genre))
@@ -284,7 +291,7 @@ def create_venue_submission():
   else:
     flash('Venue ' + request.form['name'] + ' was successfully listed!')
 
-  return render_template('pages/home.html')
+  return redirect(url_for('index'))
 
 @app.route('/venues/<venue_id>', methods=['DELETE'])
 def delete_venue(venue_id):
@@ -411,11 +418,12 @@ def edit_artist_submission(artist_id):
   artist.city = request.form['city']
   artist.state = request.form['state']
   artist.phone = request.form['phone']
+  artist.facebook_link = request.form['facebook_link']
   genres = request.form.getlist('genres')
   artist.seeking_venue = False
   artist.genre = []
   for genre in genres:
-    artist.genre.append(Genre(name=genre))
+    artist.genre.append(ArtistGenre(name=genre))
 
   error = False
   try:
@@ -460,6 +468,7 @@ def edit_venue_submission(venue_id):
   venue.city = request.form['city']
   venue.state = request.form['state']
   venue.phone = request.form['phone']
+  venue.facebook_link = request.form['facebook_link']
   genres = request.form.getlist('genres')
   venue.seeking_venue = False
   venue.genre = []
@@ -498,10 +507,12 @@ def create_artist_submission():
   artist.name = request.form['name']
   artist.city = request.form['city']
   artist.phone = request.form['phone']
+  artist.facebook_link = request.form['facebook_link']
   genres = request.form.getlist('genres')
   artist.seeking_venue = False
   for genre in genres:
-    artist.genre.append(Genre(name=genre))
+    artist.genre.append(ArtistGenre(name=genre))
+  artist.listed_time = datetime.utcnow()
 
   error = False
   try:
@@ -515,12 +526,11 @@ def create_artist_submission():
     db.session.close()
   
   if error:
-    # e.g., flash('An error occurred. Artist ' + data.name + ' could not be listed.')
     flash('An error occurred. Artist ' + artist.name + ' could not be listed.')
   else:
-    # on successful db insert, flash success
     flash('Artist ' + request.form['name'] + ' was successfully listed!')
-  return render_template('pages/home.html')
+
+  return redirect(url_for('index'))
 
 
 #  Shows
@@ -528,7 +538,7 @@ def create_artist_submission():
 
 @app.route('/shows')
 def shows():
-  # probably need to fix to only show upcoming shows
+  # TODO probably need to fix to only show upcoming shows
   shows = Show.query.order_by(Show.start_time).all()
 
   data = []
@@ -572,13 +582,11 @@ def create_show_submission():
     db.session.close()
   
   if error:
-    # e.g., flash('An error occurred. Artist ' + data.name + ' could not be listed.')
     flash('An error occurred. Show could not be listed.')
   else:
-    # on successful db insert, flash success
     flash('Show was successfully listed!')
 
-  return render_template('pages/home.html')
+  return redirect(url_for('index'))
 
 @app.errorhandler(404)
 def not_found_error(error):
